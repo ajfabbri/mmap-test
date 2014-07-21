@@ -5,54 +5,23 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
-/* shm_*() */
-#include <sys/mman.h>
-#include <sys/stat.h>        /* For mode constants */
-#include <fcntl.h>           /* For O_* constants */
+#include <errno.h>
 
 /* sysinfo */
 #include <sys/sysinfo.h>
         
-
 #include "mmap-test.h"
-
-#define SHM_NAME	"mmap-test.shm"
-#define USE_RAM_FRACTION    0.9
-#define NUM_ITERATIONS      1000
-
-#define TOUCH_STRIDE        4095
-
-
-/** Return 0 on success and set total_ram, free_ram, or return error. */
-static int get_system_ram(unsigned long *total_ram, unsigned long *free_ram)
-{
-    struct sysinfo info;
-    int error = sysinfo(&info);
-    if (error < 0)
-        return errno;
-
-    *total_ram = info.totalram;
-    *free_ram = info.freeram;
-    return 0;
-}
-
-static unsigned long buffer_size(void) {
-    unsigned long total, free;
-    int error = get_system_ram(&total, &free);
-    if (error)
-        return 0;
-    return (unsigned long)((float)free * USE_RAM_FRACTION);
-}
 
 static int mmap_test(enum memory_backing mem)
 {
     unsigned long bytes = buffer_size();;
-    if (bytes == 0)
-        return ENOMEM;
-
     int fd = -1, error = EINVAL;
     void *ptr;
+
+    if (bytes == 0) {
+        error = ENOMEM;
+        goto out;
+    }
 
     switch (mem) {
         case SHM:
@@ -63,7 +32,9 @@ static int mmap_test(enum memory_backing mem)
             break;
     }
     if (error)
-        return error;
+        goto out;
+
+    printf("%s: mapped %lu bytes of memory.\n", __func__, bytes);
 
     long i = 0;
     char *cp = (char *)ptr;
@@ -74,21 +45,23 @@ static int mmap_test(enum memory_backing mem)
         cp += TOUCH_STRIDE;
 
         /* Wrap when we get to the end of memory region */
-        if (cp > (ptr + bytes)) {
+        if (cp > ((char *)ptr + bytes)) {
             cp -= bytes;
             i++;
         }
     }
     switch (mem) {
         case SHM:
-            error = shmem_destroy(bytes, fd, ptr);
+            shmem_destroy(bytes, fd, ptr);
             break;
         case RAM_FILE:
-            error = ramfile_mem_destroy(bytes, fd, ptr);
+            ramfile_mem_destroy(bytes, fd, ptr);
             break;
     }
+out:
     if (error)
-        return error;
+        printf("%s: filed with error %d\n", __func__, error);
+    return error;
 }
 
 static void usage(const char* appname) 
@@ -101,7 +74,7 @@ int main(int argc, char *argv[])
 {
 
     if (argc != 2)
-        usage();
+        usage(argv[0]);
 
     enum memory_backing mem_type;
     if (strcmp("shmem", argv[1]) == 0)
@@ -109,7 +82,7 @@ int main(int argc, char *argv[])
     else if (strcmp("tmpfs", argv[1]) == 0)
         mem_type = RAM_FILE;
     else
-        usage();
+        usage(argv[0]);
 
     int error = mmap_test(mem_type);
     if (error)

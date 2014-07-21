@@ -11,6 +11,8 @@ AC_CONFIG_FILES([Makefile])
 AM_PROG_AR
 LT_INIT
 
+AC_CHECK_LIB([rt], [shm_open], [], [ AC_MSG_ERROR([*** Could not find librt ***]) ]) 
+
 # Check for other programs
 AC_PROG_CC
 

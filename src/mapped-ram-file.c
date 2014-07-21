@@ -2,7 +2,19 @@
  * Helpers for getting / releasing mapped memory backed by a file from a ram
  * disk FS.  *Not the way to do shared memory.*
  */
+
+#include <sys/types.h>      /* open() */
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#include <unistd.h>         /* ftruncate() */
+#include <sys/types.h>
+
+#include <sys/mman.h>       /* mmap() */
+
+#include <stdio.h>
 #include <sys/mount.h>
+#include <errno.h>
 #include <string.h>
 
 #include "mmap-test.h"
@@ -15,9 +27,10 @@ static int mount_tmpfs(const char* mount_path)
     int error = mount("none", mount_path, "tmpfs", 0 /*mntflags*/,
         NULL);
     if (error) {
-        printf("%s: error %d %s\n", __func__, error, strerror(error));
+        printf("%s: error %d %s\n", __func__, errno, strerror(errno));
+        printf("* Make sure you've created a directory at %s\n", mount_path);
         return errno;
-    else
+    } else
         return 0;
 }
 
@@ -38,7 +51,7 @@ int ramfile_mem_create(unsigned long bytes, int *out_fd, void **out_ptr)
         goto out;
 
     /* open a file in tmpfs */
-    int fd = open(RAM_FILE_NAME, O_CREAT|O_TRUNC);
+    int fd = open(RAM_FILE_NAME, O_CREAT|O_TRUNC|O_RDWR, 0664);
     if (fd < 0) {
         printf("%s: open error %d %s\n", __func__, errno, strerror(errno));
         error = errno;
@@ -46,16 +59,19 @@ int ramfile_mem_create(unsigned long bytes, int *out_fd, void **out_ptr)
     }
 
     /* set size of file */
-    int error = ftruncate(fd, (off_t)bytes);
+    error = ftruncate(fd, (off_t)bytes);
     if (error < 0) {
+        printf("%s: ftruncate(%d, %ld)  error %d %s\n", __func__, fd, (off_t)bytes,
+            errno, strerror(errno));
         error = errno;
         goto out_close;
     }
 
     /* map shared memory into our virt address space */
-    ptr = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
+    void *ptr = mmap(NULL, bytes, PROT_READ | PROT_WRITE,
             MAP_SHARED /*| MAP_HUGETLB*/, fd, 0);
     if (ptr == (void *)-1) {
+        printf("%s: mmap error %d %s\n", __func__, errno, strerror(errno));
         error = errno;
         goto out_close;
     }
@@ -82,32 +98,4 @@ void ramfile_mem_destroy(unsigned long bytes, int fd, void *ptr) {
     umount(TMPFS_MOUNT_POINT);
 }
 
-
-// vim: ts=8 et sw=4 sts=4
-
-/**
- *
- */
-#ifndef __SHMEM_H__
-#define __SHMEM_H__
-
-#define USE_RAM_FRACTION    0.9
-#define NUM_ITERATIONS      1000
-
-#define TOUCH_STRIDE        4095
-
-enum memory_backing {
-    SHM,
-//    ANON,
-    RAM_FILE,
-//    ROOT_FS_FILE
-};
-
-/* mapped-ram-file.c */
-
-/* shmem.c */
-void shmem_destroy(unsigned long bytes, int fd, void *ptr);
-int shmem_create(unsigned long bytes, int *out_fd, void **out_ptr);
-
-#ifndef __SHMEM_H__
 // vim: ts=8 et sw=4 sts=4

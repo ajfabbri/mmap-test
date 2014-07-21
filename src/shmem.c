@@ -1,6 +1,16 @@
 /**
  * Helpers for getting / releasing shared memory mappings.
  */
+
+#include <sys/mman.h>        /* shm_open() etc. */
+#include <sys/stat.h>        /* For mode constants */
+#include <fcntl.h>           /* For O_* constants */
+
+#include <unistd.h>         /* ftruncate() */
+#include <sys/types.h>
+
+#include <errno.h>
+
 #include "mmap-test.h"
 #define SHM_NAME	"mmap-test.shm"
 
@@ -35,7 +45,7 @@ int shmem_create(unsigned long bytes, int *out_fd, void **out_ptr)
 }
 
 void shmem_destroy(unsigned long bytes, int fd, void *ptr) {
-    (void)shm_unlink(fd);
+    (void)shm_unlink(SHM_NAME);
 
     if (ptr != NULL)
         (void)munmap(ptr, bytes);
