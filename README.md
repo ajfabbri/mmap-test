@@ -11,8 +11,8 @@ Motivation
 Initial goal is to show that using shared memory has measurably smaller overhead
 than using a memory mapped ram file (tmpfs).
 
-How To Build
-------------
+How To Build / Run
+------------------
 
 1. Clone this repository.
 
@@ -35,3 +35,9 @@ How To Build
 ```
 $ ./mmap-test 
 ```
+
+Tuning
+------
+
+Currently, most tunable parameters are compile-time constants.  Edit
+mmap-test.h.
