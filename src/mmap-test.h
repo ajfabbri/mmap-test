@@ -14,7 +14,7 @@
 #define MIN_FREE_RAM        (1000 * 1000 * 200)
 
 /** Each iteration touches all pages in the buffer. */  
-#define NUM_ITERATIONS      (10*1000)
+#define NUM_ITERATIONS      (1000)
 
 /** One word shy of regular page size, for cruelty. */
 #define TOUCH_STRIDE        4092

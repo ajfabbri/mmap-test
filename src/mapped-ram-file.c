@@ -93,9 +93,14 @@ void ramfile_mem_destroy(unsigned long bytes, int fd, void *ptr) {
     if (ptr != NULL)
         (void)munmap(ptr, bytes);
 
+    // TODO check for errors
+    unlink(RAM_FILE_NAME);
+
+    ftruncate(fd, 0);
     close(fd);
 
     umount(TMPFS_MOUNT_POINT);
+    printf("%s: cleaned up.\n", __func__);
 }
 
 // vim: ts=8 et sw=4 sts=4
