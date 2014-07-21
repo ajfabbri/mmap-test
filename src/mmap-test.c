@@ -7,18 +7,42 @@
 #include <assert.h>
 #include <errno.h>
 
-/* sysinfo */
-#include <sys/sysinfo.h>
+#include <sys/sysinfo.h>    /* sysinfo */
+
+#include <time.h>           /* clock_gettime */
         
 #include "mmap-test.h"
 
+static void print_stats(struct timespec *start_t, struct timespec *end_t,
+    unsigned long num_writes, unsigned long num_iterations)
+{
+    /* get elapsed wall time */
+    struct timespec delta;
+    delta.tv_sec = end_t->tv_sec - start_t->tv_sec;
+    delta.tv_nsec = end_t->tv_nsec - start_t->tv_nsec;
+    /* handle nsec wrapping */
+    if (delta.tv_nsec < 0) {
+        delta.tv_nsec += 1e9;
+        delta.tv_sec--;
+    }
+
+    double seconds = delta.tv_sec + (delta.tv_nsec/1e9);
+    double iter_per_sec = (double)num_iterations / seconds;
+    double mwrite_per_sec = ((double)num_writes/1e6) / seconds;
+
+    printf("%s: Time: %.4f, Mwrites/sec: %.4f, iteration/sec: %.4f\n", __func__,
+        seconds, mwrite_per_sec, iter_per_sec);
+}
+
+
 static int mmap_test(enum memory_backing mem)
 {
-    unsigned long bytes = buffer_size();;
+    unsigned long bytes = buffer_size();
     int fd = -1, error = EINVAL;
     void *ptr;
+    struct timespec start_t, end_t;
 
-    if (bytes == 0) {
+    if (bytes == 0 || bytes < MIN_FREE_RAM) {
         error = ENOMEM;
         goto out;
     }
@@ -34,22 +58,30 @@ static int mmap_test(enum memory_backing mem)
     if (error)
         goto out;
 
-    printf("%s: mapped %lu bytes of memory.\n", __func__, bytes);
 
     long i = 0;
     char *cp = (char *)ptr;
+    char *end = ((char *)ptr) + bytes;
+    printf("%s: mapped %lu bytes of memory at %p - %p.\n", __func__, bytes, ptr,
+        end);
+    unsigned long num_writes = 0;
+    clock_gettime(CLOCK_MONOTONIC, &start_t);
     while (i < NUM_ITERATIONS) {
         /* write some value at this memory location */
         *cp = (char)(i & 0xff);
+        num_writes++;
     
         cp += TOUCH_STRIDE;
 
         /* Wrap when we get to the end of memory region */
-        if (cp > ((char *)ptr + bytes)) {
+        if (cp >= ((char *)ptr + bytes)) {
             cp -= bytes;
             i++;
         }
     }
+    clock_gettime(CLOCK_MONOTONIC, &end_t);
+    printf("%s: done writing.\n", __func__);
+
     switch (mem) {
         case SHM:
             shmem_destroy(bytes, fd, ptr);
@@ -58,14 +90,20 @@ static int mmap_test(enum memory_backing mem)
             ramfile_mem_destroy(bytes, fd, ptr);
             break;
     }
+
+    print_stats(&start_t, &end_t, num_writes, NUM_ITERATIONS);
+
 out:
     if (error)
-        printf("%s: filed with error %d\n", __func__, error);
+        printf("%s: failed with error %d %s\n", __func__, error,
+            strerror(error));
     return error;
 }
 
 static void usage(const char* appname) 
 {
+    printf("\n** Warning **\n This test can hang your box with VM thrashing."
+        " Use at your own risk.\n");
     printf("%s: shmem | tmpfs\n", appname);
     exit(EXIT_FAILURE);
 }

@@ -7,9 +7,8 @@
 #include <assert.h>
 #include <errno.h>
 
-/* sysinfo */
-#include <sys/sysinfo.h>
-        
+#include <sys/sysinfo.h>    /* sysinfo */
+
 #include "mmap-test.h"
 
 /** Return 0 on success and set total_ram, free_ram, or return error. */
@@ -45,9 +44,10 @@ unsigned long buffer_size(void) {
         return 0;
     /* Tweak this to get desired amount of memory pressure. */
     /* Currently I do a weighted average of free and total memory. */
-    unsigned long use = (unsigned long)
+/*    unsigned long use = (unsigned long)
         ((float)total + ((float)free *2)) / 3.0;
-/*    unsigned long use =  (unsigned long)((float)total * USE_RAM_FRACTION); */
+        */
+    unsigned long use =  (unsigned long)((float)free * USE_RAM_FRACTION); 
     printf("%s: %luMB total, %luMB free\n -> Use %luMB.\n", __func__,
         byte_to_mb(total), byte_to_mb(free), byte_to_mb(use));
     return use;

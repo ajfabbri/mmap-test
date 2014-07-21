@@ -4,11 +4,20 @@
 #ifndef __MEMMAP_TEST_H__
 #define __MEMMAP_TEST_H__
 
-/* Compile-time constants. */
-#define USE_RAM_FRACTION    0.8
-#define NUM_ITERATIONS      100000
 
-#define TOUCH_STRIDE        4095
+/* Compile-time constants. */
+
+/** Use this much of free ram. */
+#define USE_RAM_FRACTION    0.70
+
+/** If there is less than this much free ram, exit! */
+#define MIN_FREE_RAM        (1000 * 1000 * 200)
+
+/** Each iteration touches all pages in the buffer. */  
+#define NUM_ITERATIONS      (10*1000)
+
+/** One word shy of regular page size, for cruelty. */
+#define TOUCH_STRIDE        4092
 
 
 /* Static inlines. */
@@ -27,6 +36,7 @@ enum memory_backing {
 //    ROOT_FS_FILE
 };
 
+
 /* Exposed APIs. */
 
 /* mapped-ram-file.c */
@@ -41,7 +51,6 @@ int shmem_create(unsigned long bytes, int *out_fd, void **out_ptr);
 int get_system_ram(unsigned long *total_ram, unsigned long *free_ram);
 const char *memory_backing_to_string(enum memory_backing m);
 unsigned long buffer_size(void);
-
 
 #endif /* __MMAP_TEST_H__ */
 // vim: ts=8 et sw=4 sts=4

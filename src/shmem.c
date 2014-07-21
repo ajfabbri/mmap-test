@@ -45,6 +45,9 @@ int shmem_create(unsigned long bytes, int *out_fd, void **out_ptr)
 }
 
 void shmem_destroy(unsigned long bytes, int fd, void *ptr) {
+
+    ftruncate(fd, 0);
+
     (void)shm_unlink(SHM_NAME);
 
     if (ptr != NULL)
