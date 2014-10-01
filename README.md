@@ -8,8 +8,10 @@ Aaron Fabbri July 2014
 Motivation
 ----------
 
-Initial goal is to show that using shared memory has measurably smaller overhead
-than using a memory mapped ram file (tmpfs).
+Initial goal is to show whether or not using shared memory has measurably smaller overhead
+than using a memory mapped ram file.
+
+Next steps are to get the time to read Linux kernel source and understand latest tmpfs / mmap.
 
 How To Build / Run
 ------------------
