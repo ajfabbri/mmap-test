@@ -1,6 +1,6 @@
 /**
  * Helpers for getting / releasing mapped memory backed by a file from a ram
- * disk FS.  *Not the way to do shared memory.*
+ * disk FS.
  */
 
 #include <sys/types.h>      /* open() */
