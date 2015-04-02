@@ -8,10 +8,10 @@ Aaron Fabbri July 2014
 Motivation
 ----------
 
-Initial goal is to show whether or not using shared memory has measurably smaller overhead
-than using a memory mapped ram file.
+Initial goal was to show whether or not using shared memory APIs has measurably
+smaller overhead than using a memory mapped ram file.
 
-Next steps are to get the time to read Linux kernel source and understand latest tmpfs / mmap.
+Still useful as examples of how to allocate large chunks of memory via mmap.
 
 How To Build / Run
 ------------------
